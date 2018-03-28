@@ -280,7 +280,7 @@ class ReferenceBuilder(object):
     def _add_uid(self, uid, skip_handle=False):
         """Add unique identifier in correct field.
 
-        The ``check_handle`` flag is used when adding a uid through the add_url function
+        The ``skip_handle`` flag is used when adding a uid through the add_url function
         since urls can be easily confused with handle elements.
         """
         # We might add None values from wherever. Kill them here.
@@ -305,6 +305,18 @@ class ReferenceBuilder(object):
         elif self.RE_VALID_CNUM.match(uid):
             self._ensure_reference_field('publication_info', {})
             self.obj['reference']['publication_info']['cnum'] = uid
+        elif self.is_CDS_id(uid):
+            self._ensure_reference_field('external_system_identifiers', [])
+            self.obj['reference']['external_system_identifiers'].append({
+                'schema': 'CDS',
+                'value': self.extract_CDS_id(uid),
+            })
+        elif self.is_ADS_id(uid):
+            self._ensure_reference_field('external_system_identifiers', [])
+            self.obj['reference']['external_system_identifiers'].append({
+                'schema': 'ADS',
+                'value': self.extract_ADS_id(uid),
+            })
         else:
             # ``idutils.is_isbn`` is too strict in what it accepts.
             try:
@@ -313,6 +325,26 @@ class ReferenceBuilder(object):
                 self.obj['reference']['isbn'] = isbn
             except Exception:
                 raise ValueError('Unrecognized uid type')
+
+    def is_CDS_id(self, uid):
+        """Check if ``uid`` corresponds to a CDS id"""
+        cds_matcher = re.compile(r'^.*cds\.cern\.ch/record/(\d*)\?.*')
+        return cds_matcher.match(uid) is not None
+
+    def is_ADS_id(self, uid):
+        """Check if ``uid`` corresponds to an ADS id"""
+        ads_matcher = re.compile(r'^.*adsabs\.harvard\.edu/abs/(\d*)')
+        return ads_matcher.match(uid) is not None
+
+    def extract_CDS_id(self, uid):
+        """Extract CDS id from a CDS url"""
+        cds_matcher = re.compile(r'^.*cds\.cern\.ch/record/(\d*)\?.*')
+        return cds_matcher.match(uid).group(1)
+
+    def extract_ADS_id(self, uid):
+        """Extract CDS id from a ADS url"""
+        ads_matcher = re.compile(r'^.*adsabs\.harvard\.edu/abs/(.*)/?')
+        return ads_matcher.match(uid).group(1)
 
     def add_collaboration(self, collaboration):
         self._ensure_reference_field('collaborations', [])
