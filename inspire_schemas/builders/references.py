@@ -49,6 +49,16 @@ RE_ARXIV_POST_2007_CLASS = re.compile(
     flags=re.I
 )
 
+# Matches CDS urls for id extraction
+CDS_MATCHER = re.compile(
+    r'^.*cds\.cern\.ch/record/(\d*)\??.*',
+    flags=re.I)
+
+# Matches ADS urls for id extraction
+ADS_MATCHER = re.compile(
+    r'^.*adsabs\.harvard\.edu/abs/(.*)',
+    flags=re.I)
+
 
 def _split_refextract_authors_str(authors_str):
     """Extract author names out of refextract authors output."""
@@ -125,6 +135,26 @@ def _normalize_arxiv(obj):
     m = idutils.is_arxiv_post_2007(obj) or RE_ARXIV_POST_2007_CLASS.match(obj)
     if m:
         return '.'.join(m.group(2, 3))
+
+
+def is_CDS_id(uid):
+    """Check if ``uid`` corresponds to a CDS id"""
+    return CDS_MATCHER.match(uid) is not None
+
+
+def is_ADS_id(uid):
+    """Check if ``uid`` corresponds to an ADS id"""
+    return ADS_MATCHER.match(uid) is not None
+
+
+def extract_CDS_id(uid):
+    """Extract CDS id from a CDS url"""
+    return CDS_MATCHER.match(uid).group(1)
+
+
+def extract_ADS_id(uid):
+    """Extract CDS id from a ADS url"""
+    return ADS_MATCHER.match(uid).group(1)
 
 
 class ReferenceBuilder(object):
@@ -305,17 +335,17 @@ class ReferenceBuilder(object):
         elif self.RE_VALID_CNUM.match(uid):
             self._ensure_reference_field('publication_info', {})
             self.obj['reference']['publication_info']['cnum'] = uid
-        elif self.is_CDS_id(uid):
+        elif is_CDS_id(uid):
             self._ensure_reference_field('external_system_identifiers', [])
             self.obj['reference']['external_system_identifiers'].append({
                 'schema': 'CDS',
-                'value': self.extract_CDS_id(uid),
+                'value': extract_CDS_id(uid),
             })
-        elif self.is_ADS_id(uid):
+        elif is_ADS_id(uid):
             self._ensure_reference_field('external_system_identifiers', [])
             self.obj['reference']['external_system_identifiers'].append({
                 'schema': 'ADS',
-                'value': self.extract_ADS_id(uid),
+                'value': extract_ADS_id(uid),
             })
         else:
             # ``idutils.is_isbn`` is too strict in what it accepts.
@@ -325,26 +355,6 @@ class ReferenceBuilder(object):
                 self.obj['reference']['isbn'] = isbn
             except Exception:
                 raise ValueError('Unrecognized uid type')
-
-    def is_CDS_id(self, uid):
-        """Check if ``uid`` corresponds to a CDS id"""
-        cds_matcher = re.compile(r'^.*cds\.cern\.ch/record/(\d*)\?.*')
-        return cds_matcher.match(uid) is not None
-
-    def is_ADS_id(self, uid):
-        """Check if ``uid`` corresponds to an ADS id"""
-        ads_matcher = re.compile(r'^.*adsabs\.harvard\.edu/abs/(\d*)')
-        return ads_matcher.match(uid) is not None
-
-    def extract_CDS_id(self, uid):
-        """Extract CDS id from a CDS url"""
-        cds_matcher = re.compile(r'^.*cds\.cern\.ch/record/(\d*)\?.*')
-        return cds_matcher.match(uid).group(1)
-
-    def extract_ADS_id(self, uid):
-        """Extract CDS id from a ADS url"""
-        ads_matcher = re.compile(r'^.*adsabs\.harvard\.edu/abs/(.*)/?')
-        return ads_matcher.match(uid).group(1)
 
     def add_collaboration(self, collaboration):
         self._ensure_reference_field('collaborations', [])
