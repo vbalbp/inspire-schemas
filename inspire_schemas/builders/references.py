@@ -51,12 +51,20 @@ RE_ARXIV_POST_2007_CLASS = re.compile(
 
 # Matches CDS urls for id extraction
 CDS_MATCHER = re.compile(
+<<<<<<< HEAD
     r'^.*cds\.cern\.ch/record/(\d*)\??.*',
+=======
+    r'^(https?://)?cds(web)?\.cern\.ch/record/(\d*)',
+>>>>>>> 5375da9... builders: extract external identifiers in urls in ReferenceBuilder
     flags=re.I)
 
 # Matches ADS urls for id extraction
 ADS_MATCHER = re.compile(
+<<<<<<< HEAD
     r'^.*adsabs\.harvard\.edu/abs/(.*)',
+=======
+    r'^(https?://)?adsabs\.harvard\.edu/abs/(.*)',
+>>>>>>> 5375da9... builders: extract external identifiers in urls in ReferenceBuilder
     flags=re.I)
 
 
@@ -137,16 +145,25 @@ def _normalize_arxiv(obj):
         return '.'.join(m.group(2, 3))
 
 
+<<<<<<< HEAD
 def is_CDS_id(uid):
+=======
+def is_cds_url(uid):
+>>>>>>> 5375da9... builders: extract external identifiers in urls in ReferenceBuilder
     """Check if ``uid`` corresponds to a CDS id"""
     return CDS_MATCHER.match(uid) is not None
 
 
+<<<<<<< HEAD
 def is_ADS_id(uid):
+=======
+def is_ads_url(uid):
+>>>>>>> 5375da9... builders: extract external identifiers in urls in ReferenceBuilder
     """Check if ``uid`` corresponds to an ADS id"""
     return ADS_MATCHER.match(uid) is not None
 
 
+<<<<<<< HEAD
 def extract_CDS_id(uid):
     """Extract CDS id from a CDS url"""
     return CDS_MATCHER.match(uid).group(1)
@@ -155,6 +172,16 @@ def extract_CDS_id(uid):
 def extract_ADS_id(uid):
     """Extract CDS id from a ADS url"""
     return ADS_MATCHER.match(uid).group(1)
+=======
+def extract_cds_id(uid):
+    """Extract CDS id from a CDS url"""
+    return CDS_MATCHER.match(uid).group(3)
+
+
+def extract_ads_id(uid):
+    """Extract ADS id from a ADS url"""
+    return ADS_MATCHER.match(uid).group(2)
+>>>>>>> 5375da9... builders: extract external identifiers in urls in ReferenceBuilder
 
 
 class ReferenceBuilder(object):
@@ -335,6 +362,7 @@ class ReferenceBuilder(object):
         elif self.RE_VALID_CNUM.match(uid):
             self._ensure_reference_field('publication_info', {})
             self.obj['reference']['publication_info']['cnum'] = uid
+<<<<<<< HEAD
         elif is_CDS_id(uid):
             self._ensure_reference_field('external_system_identifiers', [])
             self.obj['reference']['external_system_identifiers'].append({
@@ -346,6 +374,19 @@ class ReferenceBuilder(object):
             self.obj['reference']['external_system_identifiers'].append({
                 'schema': 'ADS',
                 'value': extract_ADS_id(uid),
+=======
+        elif is_cds_url(uid):
+            self._ensure_reference_field('external_system_identifiers', [])
+            self.obj['reference']['external_system_identifiers'].append({
+                'schema': 'CDS',
+                'value': extract_cds_id(uid),
+            })
+        elif is_ads_url(uid):
+            self._ensure_reference_field('external_system_identifiers', [])
+            self.obj['reference']['external_system_identifiers'].append({
+                'schema': 'ADS',
+                'value': extract_ads_id(uid),
+>>>>>>> 5375da9... builders: extract external identifiers in urls in ReferenceBuilder
             })
         else:
             # ``idutils.is_isbn`` is too strict in what it accepts.
